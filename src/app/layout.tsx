@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Home, Search, BookOpen, Compass, User } from "lucide-react";
+import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: "Mark - Dijital Kütüphane",
@@ -31,9 +32,9 @@ export default function RootLayout({
               <button className="flex items-center gap-4 text-white font-medium px-3 py-2.5 rounded-lg bg-[#1a1a1a] transition-all w-full text-left">
                 <Home size={20} className="text-[var(--accent)]" /> Ana Sayfa
               </button>
-              <button className="flex items-center gap-4 text-[var(--text-muted)] hover:text-white font-medium px-3 py-2.5 rounded-lg hover:bg-[#111] transition-all w-full text-left">
+              <Link href="/search" className="flex items-center gap-4 text-[var(--text-muted)] hover:text-white font-medium px-3 py-2.5 rounded-lg hover:bg-[#111] transition-all w-full text-left">
                 <Search size={20} /> Kitap Ara
-              </button>
+              </Link>
               <button className="flex items-center gap-4 text-[var(--text-muted)] hover:text-white font-medium px-3 py-2.5 rounded-lg hover:bg-[#111] transition-all w-full text-left">
                 <Compass size={20} /> Keşfet
               </button>

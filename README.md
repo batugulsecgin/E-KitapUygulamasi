@@ -1,5 +1,14 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Before Getting Started Keep In Mind
+This project is not finished yet. In fact, it is still in the early stages of development. But you can still use it to create your own application. Feel free to copy :D
+
+It's supposed to be an e-book app that contains copyright-free Turkish books.
+By the way, I don't know why I'm writing this in English even though it's a Turkish project. I guess I'm too enthusiastic or whatever...
+
+This README.md is not created by me so it can mislead. I recommend you to use AI while copying this repository.
+
+See Ya !
 ## Getting Started
 
 First, run the development server:

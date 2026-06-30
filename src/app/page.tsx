@@ -5,6 +5,7 @@ import { Book } from '@/types/book';
 import BookShelf from '@/components/BookShelf';
 import { Play, Plus } from 'lucide-react';
 import Link from 'next/link';
+import ContinueReadingShelf from '@/components/ContinueReadingShelf';
 
 export default async function Home() {
   // 1. JSON Verisini Okuma (Next.js Server Component gücüyle)
@@ -69,6 +70,11 @@ export default async function Home() {
             </div>
           </div>
         </div>
+
+        {/* ... Hero Banner Bitişi ... */}
+
+        {/* KULLANICININ OKUDUĞU KİTAPLAR RAFI (Otomatik olarak gizlenir/gösterilir) */}
+        <ContinueReadingShelf books={books} />
 
         {/* DİNAMİK RAFLAR */}
 
