@@ -15,94 +15,90 @@ export default function EpubReader({ epubUrl, bookId, title }: EpubReaderProps) 
     const viewerRef = useRef<HTMLDivElement>(null);
     const [rendition, setRendition] = useState<any>(null);
 
-    // Ekranda "Kaydedildi" animasyonu göstermek için yeni state
     const [showSavedToast, setShowSavedToast] = useState(false);
-
-    // KİŞİSELLEŞTİRME MENÜSÜ STATE'LERİ
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+
     const [fontSize, setFontSize] = useState(100);
     const [currentTheme, setCurrentTheme] = useState('light');
     const [fontFamily, setFontFamily] = useState('serif');
 
     useEffect(() => {
-        if (typeof window !== 'undefined' && viewerRef.current) {
-            const book = ePub(epubUrl);
+        let isMounted = true;
 
+        if (typeof window !== 'undefined' && viewerRef.current) {
+            // NÜKLEER TEMİZLİK: Önceki e-kitap iframe'ini DOM'dan tamamen siliyoruz
+            viewerRef.current.innerHTML = '';
+
+            const book = ePub(epubUrl);
             const rend = book.renderTo(viewerRef.current, {
                 width: '100%',
                 height: '100%',
                 spread: 'none',
             });
 
-            rend.themes.register("light", { body: { background: "#fdfdfd", color: "#111111" }});
-            rend.themes.register("dark", { body: { background: "#141414", color: "#f5f5f7" }});
-            rend.themes.register("sepia", { body: { background: "#f4ecd8", color: "#5b4636" }});
+            const sharedSelectors = "p, span, div, h1, h2, h3, h4, h5, h6, li, blockquote, a, section";
+
+            // SADECE aktif olan temayı sisteme kaydediyoruz ki diğerleriyle çakışmasın
+            if (currentTheme === 'light') {
+                rend.themes.register("light", {
+                    body: { background: "#fdfdfd !important", color: "#111111 !important" },
+                    [sharedSelectors]: { background: "transparent !important", color: "#111111 !important" }
+                });
+            } else if (currentTheme === 'dark') {
+                rend.themes.register("dark", {
+                    body: { background: "#141414 !important", color: "#f5f5f7 !important" },
+                    [sharedSelectors]: { background: "transparent !important", color: "#f5f5f7 !important" }
+                });
+            } else {
+                rend.themes.register("sepia", {
+                    body: { background: "#f4ecd8 !important", color: "#5b4636 !important" },
+                    [sharedSelectors]: { background: "transparent !important", color: "#5b4636 !important" }
+                });
+            }
 
             rend.themes.select(currentTheme);
             rend.themes.fontSize(`${fontSize}%`);
             rend.themes.font(fontFamily);
 
-            // --- YENİ EKLENEN HAFIZA (CFI) SİSTEMİ ---
-
-            // 1. Önce hafızada (localStorage) bu kitap için bir kayıt var mı diye bakıyoruz
+            // E-kitap yeniden yüklendiğinde hafızadaki konumdan (CFI) başlat
             const savedCfi = localStorage.getItem(`mark_progress_${bookId}`);
-
             if (savedCfi) {
-                // Kayıt varsa motoru doğrudan o koordinattan başlat
                 rend.display(savedCfi);
             } else {
-                // Kayıt yoksa kitabı en baştan başlat
                 rend.display();
             }
 
-            // 2. Kullanıcı her sayfa değiştirdiğinde yeni konumu kaydet
             rend.on('relocated', (location: any) => {
+                if (!isMounted) return; // Bileşen silindiyse state güncellemesini durdur
                 const currentCfi = location.start.cfi;
                 localStorage.setItem(`mark_progress_${bookId}`, currentCfi);
 
-                // Sağ üstte minik bir "Kaydedildi" ikonu yakıp söndürmek için
                 setShowSavedToast(true);
-                setTimeout(() => setShowSavedToast(false), 2000);
+                setTimeout(() => { if (isMounted) setShowSavedToast(false); }, 2000);
             });
 
             setRendition(rend);
 
             return () => {
-                book.destroy();
+                isMounted = false;
+                book.destroy(); // Bileşen her yenilendiğinde eski kitabı hafızadan sil
             };
         }
-    }, [epubUrl, bookId]);
+        // DEĞİŞİKLİK BURADA: Tema, font veya boyut değiştiğinde bu useEffect baştan çalışacak
+    }, [epubUrl, bookId, currentTheme, fontSize, fontFamily]);
 
-    // --- DEĞİŞİKLİK FONKSİYONLARI ---
-    const changeTheme = (theme: string) => {
-        setCurrentTheme(theme);
-        rendition?.themes.select(theme);
-    };
-
-    const changeFontSize = (amount: number) => {
-        const newSize = Math.max(50, Math.min(200, fontSize + amount));
-        setFontSize(newSize);
-        rendition?.themes.fontSize(`${newSize}%`);
-    };
-
-    const changeFontFamily = (font: string) => {
-        setFontFamily(font);
-        rendition?.themes.font(font);
-    };
+    // --- ARTIK SADECE REACT STATE'İNİ DEĞİŞTİRİYORUZ ---
+    const changeTheme = (theme: string) => setCurrentTheme(theme);
+    const changeFontSize = (amount: number) => setFontSize(Math.max(50, Math.min(200, fontSize + amount)));
+    const changeFontFamily = (font: string) => setFontFamily(font);
 
     const next = () => rendition?.next();
     const prev = () => rendition?.prev();
 
     const getOuterBgColor = () => {
-        if (currentTheme === 'dark') return 'bg-[#111111]';
-        if (currentTheme === 'sepia') return 'bg-[#e8dcb8]';
-        return 'bg-[#f0f0f0]';
-    };
-
-    const getPaperBgColor = () => {
-        if (currentTheme === 'dark') return 'bg-[#141414]';
-        if (currentTheme === 'sepia') return 'bg-[#f4ecd8]';
-        return 'bg-[#fdfdfd]';
+        if (currentTheme === 'dark') return '#111111';
+        if (currentTheme === 'sepia') return '#e8dcb8';
+        return '#f0f0f0';
     };
 
     return (
@@ -115,7 +111,6 @@ export default function EpubReader({ epubUrl, bookId, title }: EpubReaderProps) 
                 <div className="font-bold text-white text-lg tracking-wide">{title}</div>
 
                 <div className="flex items-center gap-4">
-                    {/* KAYDEDİLDİ BİLDİRİMİ (TOAST) */}
                     <div className={`flex items-center gap-1 text-green-500 text-xs font-bold transition-opacity duration-500 ${showSavedToast ? 'opacity-100' : 'opacity-0'}`}>
                         <BookmarkCheck size={16} /> Konum Kaydedildi
                     </div>
@@ -161,21 +156,24 @@ export default function EpubReader({ epubUrl, bookId, title }: EpubReaderProps) 
                 )}
             </div>
 
-            <div className={`flex-1 relative flex items-center justify-center transition-colors duration-500 ${getOuterBgColor()}`}>
-
+            <div
+                className="flex-1 relative flex items-center justify-center transition-colors duration-500"
+                style={{ backgroundColor: getOuterBgColor() }}
+            >
                 <button onClick={prev} className="absolute left-2 md:left-8 z-10 p-3 bg-black/40 text-white rounded-full hover:bg-[var(--accent)] hover:scale-110 transition-all backdrop-blur-sm border border-white/10">
                     <ChevronLeft size={32} />
                 </button>
 
+                {/* DOM'un sürekli temizlenip yeniden yaratılacağı DIV */}
                 <div
                     ref={viewerRef}
-                    className={`w-full max-w-3xl h-[85vh] rounded-md shadow-2xl overflow-hidden transition-colors duration-500 ${getPaperBgColor()}`}
+                    className="w-full max-w-3xl h-[85vh] rounded-md shadow-2xl overflow-hidden"
+                    /* İç rengi artık epub.js içinden body'e verilen background halledecek */
                 />
 
                 <button onClick={next} className="absolute right-2 md:right-8 z-10 p-3 bg-black/40 text-white rounded-full hover:bg-[var(--accent)] hover:scale-110 transition-all backdrop-blur-sm border border-white/10">
                     <ChevronRight size={32} />
                 </button>
-
             </div>
         </div>
     );
